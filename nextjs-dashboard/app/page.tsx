@@ -66,7 +66,6 @@ export default function Home() {
       new Notification(title, {
         body,
         icon: "/icons/icon.svg",
-        vibrate: [200, 100, 200],
       });
     }
   }, []);
