@@ -1,0 +1,160 @@
+[
+    {
+        "id": "comment_api",
+        "type": "comment",
+        "z": "flow_lora_dashboard",
+        "name": "=== API REST pour app Next.js ===",
+        "info": "Endpoints HTTP pour exposer les donnees aux clients externes (Next.js dashboard)",
+        "x": 230,
+        "y": 1300,
+        "wires": []
+    },
+    {
+        "id": "fn_store_for_api",
+        "type": "function",
+        "z": "flow_lora_dashboard",
+        "name": "Stocker pour API",
+        "func": "// Appele depuis la sortie 10 (heroPayload) de fn_normalize\nconst d = msg.payload;\nconst deviceId = d.device || 'unknown';\n\n// Stocker la derniere lecture\nlet devices = flow.get('api_devices') || {};\ndevices[deviceId] = {\n    deviceId: deviceId,\n    timestamp: new Date().toISOString(),\n    temperature: parseFloat(d.temperature) || 0,\n    temperatureAdc: d.temperatureAdc,\n    no2: parseInt(d.no2) || 0,\n    ethanol: parseInt(d.ethanol) || 0,\n    voc: parseInt(d.voc) || 0,\n    co: parseInt(d.co) || 0,\n    airQuality: d.airQuality,\n    warmup: d.warmup,\n    ledText: d.ledText,\n    rssi: d.rssi,\n    snr: d.snr,\n    alerts: d.alerts\n};\nflow.set('api_devices', devices);\n\n// Historique (max 2000 points par device)\nlet history = flow.get('api_history_' + deviceId) || [];\nhistory.push(devices[deviceId]);\nif (history.length > 2000) history = history.slice(-2000);\nflow.set('api_history_' + deviceId, history);\n\n// Stats\nlet stats = flow.get('api_stats') || { totalMessages: 0, totalAlerts: 0 };\nstats.totalMessages++;\nif (d.alerts && d.alerts !== 'RAS') stats.totalAlerts++;\nflow.set('api_stats', stats);\n\nreturn msg;",
+        "outputs": 1,
+        "x": 860,
+        "y": 1340,
+        "wires": [[]]
+    },
+    {
+        "id": "api_cors_options_latest",
+        "type": "http in",
+        "z": "flow_lora_dashboard",
+        "name": "OPTIONS /api/latest",
+        "url": "/api/latest",
+        "method": "options",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 180,
+        "y": 1380,
+        "wires": [["api_cors_response"]]
+    },
+    {
+        "id": "api_cors_options_history",
+        "type": "http in",
+        "z": "flow_lora_dashboard",
+        "name": "OPTIONS /api/history/:id",
+        "url": "/api/history/:deviceId",
+        "method": "options",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1420,
+        "wires": [["api_cors_response"]]
+    },
+    {
+        "id": "api_cors_options_stats",
+        "type": "http in",
+        "z": "flow_lora_dashboard",
+        "name": "OPTIONS /api/stats",
+        "url": "/api/stats",
+        "method": "options",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 180,
+        "y": 1460,
+        "wires": [["api_cors_response"]]
+    },
+    {
+        "id": "api_cors_response",
+        "type": "http response",
+        "z": "flow_lora_dashboard",
+        "name": "CORS OK",
+        "statusCode": "204",
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET,OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type"
+        },
+        "x": 450,
+        "y": 1420,
+        "wires": []
+    },
+    {
+        "id": "api_get_latest",
+        "type": "http in",
+        "z": "flow_lora_dashboard",
+        "name": "GET /api/latest",
+        "url": "/api/latest",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 170,
+        "y": 1520,
+        "wires": [["api_get_latest_fn"]]
+    },
+    {
+        "id": "api_get_latest_fn",
+        "type": "function",
+        "z": "flow_lora_dashboard",
+        "name": "Retourner dernieres valeurs",
+        "func": "const devices = flow.get('api_devices') || {};\nmsg.payload = Object.values(devices);\nmsg.headers = {\n    'Access-Control-Allow-Origin': '*',\n    'Content-Type': 'application/json'\n};\nreturn msg;",
+        "outputs": 1,
+        "x": 430,
+        "y": 1520,
+        "wires": [["api_json_response"]]
+    },
+    {
+        "id": "api_get_history",
+        "type": "http in",
+        "z": "flow_lora_dashboard",
+        "name": "GET /api/history/:deviceId",
+        "url": "/api/history/:deviceId",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1570,
+        "wires": [["api_get_history_fn"]]
+    },
+    {
+        "id": "api_get_history_fn",
+        "type": "function",
+        "z": "flow_lora_dashboard",
+        "name": "Retourner historique",
+        "func": "const deviceId = msg.req.params.deviceId;\nconst hours = parseInt(msg.req.query.hours) || 24;\nconst history = flow.get('api_history_' + deviceId) || [];\n\nconst cutoff = Date.now() - (hours * 3600000);\nconst filtered = history.filter(h => new Date(h.timestamp).getTime() > cutoff);\n\nmsg.payload = filtered;\nmsg.headers = {\n    'Access-Control-Allow-Origin': '*',\n    'Content-Type': 'application/json'\n};\nreturn msg;",
+        "outputs": 1,
+        "x": 420,
+        "y": 1570,
+        "wires": [["api_json_response"]]
+    },
+    {
+        "id": "api_get_stats",
+        "type": "http in",
+        "z": "flow_lora_dashboard",
+        "name": "GET /api/stats",
+        "url": "/api/stats",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 170,
+        "y": 1620,
+        "wires": [["api_get_stats_fn"]]
+    },
+    {
+        "id": "api_get_stats_fn",
+        "type": "function",
+        "z": "flow_lora_dashboard",
+        "name": "Retourner stats",
+        "func": "const stats = flow.get('api_stats') || { totalMessages: 0, totalAlerts: 0 };\nconst devices = flow.get('api_devices') || {};\n\nmsg.payload = {\n    totalMessages: stats.totalMessages,\n    totalAlerts: stats.totalAlerts,\n    activeDevices: Object.keys(devices).length,\n    devices: Object.keys(devices)\n};\nmsg.headers = {\n    'Access-Control-Allow-Origin': '*',\n    'Content-Type': 'application/json'\n};\nreturn msg;",
+        "outputs": 1,
+        "x": 410,
+        "y": 1620,
+        "wires": [["api_json_response"]]
+    },
+    {
+        "id": "api_json_response",
+        "type": "http response",
+        "z": "flow_lora_dashboard",
+        "name": "JSON Response",
+        "statusCode": "200",
+        "headers": {},
+        "x": 680,
+        "y": 1570,
+        "wires": []
+    }
+]
