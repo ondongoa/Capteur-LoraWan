@@ -50,8 +50,27 @@ function timeAgo(timestamp: string): string {
 
 export default function Home() {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
-  const [tab, setTab] = useState<"accueil" | "charts" | "alertes">("accueil");
+  const [tab, setTab] = useState<"accueil" | "charts" | "alertes" | "prefs">("accueil");
   const lastAlertRef = useRef<string>("");
+
+  // Seuils d'alerte configurables (persistes en localStorage)
+  const [thresholds, setThresholds] = useState({
+    tempHigh: 35,
+    tempLow: 5,
+    gasModere: 1500,
+    gasEleve: 5000,
+    gasCritique: 15000,
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("airwatch-thresholds");
+    if (saved) setThresholds(JSON.parse(saved));
+  }, []);
+
+  const saveThresholds = (newThresholds: typeof thresholds) => {
+    setThresholds(newThresholds);
+    localStorage.setItem("airwatch-thresholds", JSON.stringify(newThresholds));
+  };
 
   // Demander la permission de notification au montage
   useEffect(() => {
@@ -94,6 +113,9 @@ export default function Home() {
     }
   }, [latest, selectedDevice]);
 
+  const current = latest?.find((r) => r.deviceId === selectedDevice);
+  const devices = stats?.devices || [];
+
   // Detecter les nouvelles alertes et envoyer une notification
   useEffect(() => {
     if (!current) return;
@@ -105,9 +127,6 @@ export default function Home() {
       );
     }
   }, [current, sendNotification]);
-
-  const current = latest?.find((r) => r.deviceId === selectedDevice);
-  const devices = stats?.devices || [];
   const qConfig = current ? getQualityConfig(current.airQuality) : null;
   const airIndex = current
     ? Math.max(current.no2, current.ethanol, current.voc, current.co)
@@ -332,6 +351,123 @@ export default function Home() {
                 )}
               </div>
             )}
+
+            {/* TAB: Preferences */}
+            {tab === "prefs" && (
+              <div className="space-y-4 mt-2">
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">
+                    Seuils de temperature
+                  </h3>
+                  <div className="space-y-4">
+                    <label className="block">
+                      <span className="text-sm text-slate-600">Alerte haute (°C)</span>
+                      <input
+                        type="number"
+                        value={thresholds.tempHigh}
+                        onChange={(e) => saveThresholds({ ...thresholds, tempHigh: Number(e.target.value) })}
+                        className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-slate-400 focus:ring-0 outline-none"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm text-slate-600">Alerte basse (°C)</span>
+                      <input
+                        type="number"
+                        value={thresholds.tempLow}
+                        onChange={(e) => saveThresholds({ ...thresholds, tempLow: Number(e.target.value) })}
+                        className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-slate-400 focus:ring-0 outline-none"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">
+                    Seuils qualite de l&apos;air (index gaz)
+                  </h3>
+                  <div className="space-y-4">
+                    <label className="block">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Modere (jaune)</span>
+                        <span className="text-xs font-mono text-slate-400">&ge; {thresholds.gasModere}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="500"
+                        max="5000"
+                        step="100"
+                        value={thresholds.gasModere}
+                        onChange={(e) => saveThresholds({ ...thresholds, gasModere: Number(e.target.value) })}
+                        className="mt-2 w-full accent-yellow-500"
+                      />
+                    </label>
+                    <label className="block">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Eleve (orange)</span>
+                        <span className="text-xs font-mono text-slate-400">&ge; {thresholds.gasEleve}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="2000"
+                        max="20000"
+                        step="500"
+                        value={thresholds.gasEleve}
+                        onChange={(e) => saveThresholds({ ...thresholds, gasEleve: Number(e.target.value) })}
+                        className="mt-2 w-full accent-orange-500"
+                      />
+                    </label>
+                    <label className="block">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Critique (rouge)</span>
+                        <span className="text-xs font-mono text-slate-400">&ge; {thresholds.gasCritique}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="5000"
+                        max="60000"
+                        step="1000"
+                        value={thresholds.gasCritique}
+                        onChange={(e) => saveThresholds({ ...thresholds, gasCritique: Number(e.target.value) })}
+                        className="mt-2 w-full accent-red-500"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Preview des seuils */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+                    Apercu des niveaux
+                  </h3>
+                  <div className="space-y-2">
+                    {[
+                      { label: "Tres bon", range: `0 - ${thresholds.gasModere}`, color: "#00b894" },
+                      { label: "Modere", range: `${thresholds.gasModere} - ${thresholds.gasEleve}`, color: "#fdcb6e" },
+                      { label: "Eleve", range: `${thresholds.gasEleve} - ${thresholds.gasCritique}`, color: "#e17055" },
+                      { label: "Critique", range: `> ${thresholds.gasCritique}`, color: "#d63031" },
+                    ].map((level) => (
+                      <div key={level.label} className="flex items-center gap-3 py-1.5">
+                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: level.color }} />
+                        <span className="text-sm font-medium text-slate-700 flex-1">{level.label}</span>
+                        <span className="text-xs font-mono text-slate-400">{level.range}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Temp alert preview */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+                    Alertes temperature
+                  </h3>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-blue-600 font-medium">Froid &le; {thresholds.tempLow}°C</span>
+                    <span className="text-slate-400">Normal</span>
+                    <span className="text-red-600 font-medium">&ge; {thresholds.tempHigh}°C Chaud</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -372,6 +508,15 @@ export default function Home() {
                     </span>
                   )}
                 </div>
+              ),
+            },
+            {
+              id: "prefs" as const,
+              label: "Seuils",
+              icon: (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
               ),
             },
           ].map((item) => (
