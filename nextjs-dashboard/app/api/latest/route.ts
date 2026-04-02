@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { ensureMqttConnected } from "@/lib/ttn-mqtt";
 import { getLatest } from "@/lib/ttn-store";
 
-// Demarre la connexion MQTT au premier appel
+export const dynamic = "force-dynamic";
+
 ensureMqttConnected();
 
 export async function GET() {
