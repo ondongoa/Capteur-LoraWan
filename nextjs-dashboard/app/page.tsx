@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import CircularGauge from "@/components/CircularGauge";
 import MetricCard from "@/components/MetricCard";
@@ -51,6 +51,25 @@ function timeAgo(timestamp: string): string {
 export default function Home() {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [tab, setTab] = useState<"accueil" | "charts" | "alertes">("accueil");
+  const lastAlertRef = useRef<string>("");
+
+  // Demander la permission de notification au montage
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Notification browser quand une alerte change
+  const sendNotification = useCallback((title: string, body: string) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, {
+        body,
+        icon: "/icons/icon.svg",
+        vibrate: [200, 100, 200],
+      });
+    }
+  }, []);
 
   const { data: latest, error: latestError } = useSWR<Reading[]>(
     `${API_BASE}/api/latest`,
@@ -75,6 +94,18 @@ export default function Home() {
       setSelectedDevice(latest[0].deviceId);
     }
   }, [latest, selectedDevice]);
+
+  // Detecter les nouvelles alertes et envoyer une notification
+  useEffect(() => {
+    if (!current) return;
+    if (current.alerts && current.alerts !== "RAS" && current.alerts !== lastAlertRef.current) {
+      lastAlertRef.current = current.alerts;
+      sendNotification(
+        `AirWatch - ${current.airQuality.toUpperCase()}`,
+        `${current.deviceId}: ${current.alerts}`
+      );
+    }
+  }, [current, sendNotification]);
 
   const current = latest?.find((r) => r.deviceId === selectedDevice);
   const devices = stats?.devices || [];
