@@ -441,9 +441,9 @@ export default function Home() {
                       </div>
                       <input
                         type="range"
-                        min="500"
+                        min="0"
                         max="5000"
-                        step="100"
+                        step="50"
                         value={thresholds.gasModere}
                         onChange={(e) => saveThresholds({ ...thresholds, gasModere: Number(e.target.value) })}
                         className="mt-2 w-full accent-yellow-500"
@@ -456,9 +456,9 @@ export default function Home() {
                       </div>
                       <input
                         type="range"
-                        min="2000"
+                        min="0"
                         max="20000"
-                        step="500"
+                        step="100"
                         value={thresholds.gasEleve}
                         onChange={(e) => saveThresholds({ ...thresholds, gasEleve: Number(e.target.value) })}
                         className="mt-2 w-full accent-orange-500"
@@ -471,9 +471,9 @@ export default function Home() {
                       </div>
                       <input
                         type="range"
-                        min="5000"
+                        min="0"
                         max="60000"
-                        step="1000"
+                        step="100"
                         value={thresholds.gasCritique}
                         onChange={(e) => saveThresholds({ ...thresholds, gasCritique: Number(e.target.value) })}
                         className="mt-2 w-full accent-red-500"
