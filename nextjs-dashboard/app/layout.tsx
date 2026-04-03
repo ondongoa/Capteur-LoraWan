@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AirWatch - Qualite de l'air",
-  description: "Surveillance qualite de l'air interieur via LoRaWAN",
+  title: "Qualite de l'Air - Surveillance IoT",
+  description: "Surveillance de la qualite de l'air interieur via LoRaWAN",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

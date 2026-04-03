@@ -1,6 +1,6 @@
 {
-  "name": "AirWatch - Qualite de l'air",
-  "short_name": "AirWatch",
+  "name": "Qualite de l'Air - Surveillance IoT",
+  "short_name": "Qualite Air",
   "description": "Surveillance qualite de l'air interieur via LoRaWAN",
   "start_url": "/",
   "display": "standalone",

@@ -171,9 +171,9 @@ export default function Home() {
       {/* Status bar header */}
       <header className="bg-white px-5 pt-3 pb-2 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-extrabold text-slate-800">AirWatch</h1>
+          <h1 className="text-lg font-extrabold text-slate-800">Qualite de l&apos;Air</h1>
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
-            LoRaWAN Monitor
+            Surveillance LoRaWAN
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -239,7 +239,7 @@ export default function Home() {
                           value={airIndex}
                           max={30000}
                           label={qConfig.label}
-                          sublabel="index"
+                          sublabel="indice"
                           color="#ffffff"
                           bgColor="rgba(255,255,255,0.2)"
                           size={160}
@@ -247,13 +247,13 @@ export default function Home() {
                       </div>
                       <div className="text-right space-y-2">
                         <div>
-                          <p className="text-white/70 text-xs font-medium">Temperature</p>
+                          <p className="text-white/70 text-xs font-medium">Temp&eacute;rature</p>
                           <p className="text-2xl font-extrabold">
                             {current.temperature}<span className="text-sm font-normal text-white/70"> °C</span>
                           </p>
                         </div>
                         <div className="bg-white/20 rounded-xl px-3 py-2">
-                          <p className="text-[10px] text-white/70 font-medium uppercase">Derniere mesure</p>
+                          <p className="text-[10px] text-white/70 font-medium uppercase">Derni&egrave;re mesure</p>
                           <p className="text-xs font-bold">{timeAgo(current.timestamp)}</p>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -274,33 +274,49 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Gas metrics grid */}
+                {/* CO2 equivalent card */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">CO2 equivalent (estim.)</p>
+                      <p className="text-3xl font-extrabold text-slate-800 mt-1">
+                        {Math.round(400 + (airIndex / 60000) * 2100)}
+                        <span className="text-sm font-medium text-slate-400 ml-1">ppm</span>
+                      </p>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold" style={{ backgroundColor: qConfig?.color || "#636e72" }}>
+                      CO2
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grille des gaz */}
                 <div className="grid grid-cols-2 gap-3">
                   <MetricCard
                     title="NO2"
                     value={current.no2}
-                    unit="raw"
+                    unit="brut"
                     icon={<GasIcon />}
                     color="#2563eb"
                   />
                   <MetricCard
-                    title="C2H5OH"
+                    title="Ethanol"
                     value={current.ethanol}
-                    unit="raw"
+                    unit="brut"
                     icon={<GasIcon />}
                     color="#9333ea"
                   />
                   <MetricCard
-                    title="VOC"
+                    title="COV"
                     value={current.voc}
-                    unit="raw"
+                    unit="brut"
                     icon={<GasIcon />}
                     color="#0d9488"
                   />
                   <MetricCard
                     title="CO"
                     value={current.co}
-                    unit="raw"
+                    unit="brut"
                     icon={<GasIcon />}
                     color="#dc2626"
                   />
@@ -310,9 +326,9 @@ export default function Home() {
                 <div className="bg-white rounded-2xl p-4 shadow-sm">
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-xs text-slate-400 font-medium">Warmup</p>
+                      <p className="text-xs text-slate-400 font-medium">Prechauffage</p>
                       <p className="text-sm font-bold text-slate-700 mt-1">
-                        {current.warmup === "termine" ? "Pret" : "En cours"}
+                        {current.warmup === "termine" ? "Termine" : "En cours"}
                       </p>
                     </div>
                     <div>
@@ -357,10 +373,10 @@ export default function Home() {
                 {history && history.length > 1 ? (
                   <>
                     <Chart data={history} dataKey="temperature" title="Temperature (°C)" color="#ea580c" unit="°C" />
-                    <Chart data={history} dataKey="no2" title="NO2" color="#2563eb" />
-                    <Chart data={history} dataKey="ethanol" title="C2H5OH" color="#9333ea" />
-                    <Chart data={history} dataKey="voc" title="VOC" color="#0d9488" />
-                    <Chart data={history} dataKey="co" title="CO" color="#dc2626" />
+                    <Chart data={history} dataKey="no2" title="NO2 (brut)" color="#2563eb" />
+                    <Chart data={history} dataKey="ethanol" title="Ethanol (brut)" color="#9333ea" />
+                    <Chart data={history} dataKey="voc" title="COV (brut)" color="#0d9488" />
+                    <Chart data={history} dataKey="co" title="CO (brut)" color="#dc2626" />
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-60 text-slate-400">
