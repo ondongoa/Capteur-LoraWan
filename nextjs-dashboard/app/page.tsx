@@ -26,6 +26,25 @@ const GasIcon = () => (
   </svg>
 );
 
+function computeAirQuality(
+  airIndex: number,
+  t: { gasModere: number; gasEleve: number; gasCritique: number }
+): string {
+  if (airIndex >= t.gasCritique) return "critique";
+  if (airIndex >= t.gasEleve) return "eleve";
+  if (airIndex >= t.gasModere) return "modere";
+  return "faible";
+}
+
+function computeTempAlerts(
+  temp: number,
+  t: { tempHigh: number; tempLow: number }
+): string | null {
+  if (temp >= t.tempHigh) return `Temperature elevee: ${temp}°C (seuil: ${t.tempHigh}°C)`;
+  if (temp <= t.tempLow) return `Temperature basse: ${temp}°C (seuil: ${t.tempLow}°C)`;
+  return null;
+}
+
 function getQualityConfig(quality: string) {
   switch (quality) {
     case "faible":
@@ -116,21 +135,32 @@ export default function Home() {
   const current = latest?.find((r) => r.deviceId === selectedDevice);
   const devices = stats?.devices || [];
 
-  // Detecter les nouvelles alertes et envoyer une notification
-  useEffect(() => {
-    if (!current) return;
-    if (current.alerts && current.alerts !== "RAS" && current.alerts !== lastAlertRef.current) {
-      lastAlertRef.current = current.alerts;
-      sendNotification(
-        `AirWatch - ${current.airQuality.toUpperCase()}`,
-        `${current.deviceId}: ${current.alerts}`
-      );
-    }
-  }, [current, sendNotification]);
-  const qConfig = current ? getQualityConfig(current.airQuality) : null;
   const airIndex = current
     ? Math.max(current.no2, current.ethanol, current.voc, current.co)
     : 0;
+  const clientAirQuality = current
+    ? computeAirQuality(airIndex, thresholds)
+    : "faible";
+  const qConfig = current ? getQualityConfig(clientAirQuality) : null;
+  const tempAlert = current
+    ? computeTempAlerts(current.temperature, thresholds)
+    : null;
+
+  // Detecter les nouvelles alertes et envoyer une notification
+  useEffect(() => {
+    if (!current) return;
+    const alertParts: string[] = [];
+    if (clientAirQuality !== "faible") alertParts.push(`Air: ${clientAirQuality}`);
+    if (tempAlert) alertParts.push(tempAlert);
+    const combinedAlert = alertParts.length > 0 ? alertParts.join(" | ") : "RAS";
+    if (combinedAlert !== "RAS" && combinedAlert !== lastAlertRef.current) {
+      lastAlertRef.current = combinedAlert;
+      sendNotification(
+        `AirWatch - ${clientAirQuality.toUpperCase()}`,
+        `${current.deviceId}: ${combinedAlert}`
+      );
+    }
+  }, [current, clientAirQuality, tempAlert, sendNotification]);
 
   const alertCount = history
     ? history.filter((r) => r.alerts && r.alerts !== "RAS").length
@@ -233,10 +263,12 @@ export default function Home() {
                       </div>
                     </div>
                     {/* Alert banner */}
-                    {current.alerts && current.alerts !== "RAS" && (
+                    {(clientAirQuality !== "faible" || tempAlert) && (
                       <div className="mt-4 bg-white/20 backdrop-blur rounded-xl px-4 py-2.5 flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-white alert-pulse" />
-                        <p className="text-sm font-medium truncate">{current.alerts}</p>
+                        <p className="text-sm font-medium truncate">
+                          {[clientAirQuality !== "faible" ? `Air: ${qConfig?.label}` : null, tempAlert].filter(Boolean).join(" | ")}
+                        </p>
                       </div>
                     )}
                   </div>
