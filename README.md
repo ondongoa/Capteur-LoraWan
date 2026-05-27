@@ -1,5 +1,4 @@
 # IoT Air  Monitor - LoRaWAN
-BOJANEK Jonathan  |  ONDONGO Alex  |  ROMAN Emerick  |  STEL Basile
 
 Surveillance qualite de l'air interieur avec capteur GMXXX (NO2, Ethanol, VOC, CO) + temperature Grove v1.2, via LoRaWAN / TTN.
 
